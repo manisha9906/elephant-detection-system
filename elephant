@@ -1,0 +1,75 @@
+from cv2 import *
+import smtplib,ssl
+from time import sleep  
+from email.mime.multipart import MIMEMultipart  
+from email.mime.base import MIMEBase  
+from email.mime.text import MIMEText  
+from email.utils import formatdate  
+from email import encoders  
+import matplotlib.pyplot as plt
+import os
+import imageai
+from imageai import *
+from imageai.Detection import ObjectDetection
+import os
+from Adafruit_IO import *
+import warnings
+warnings.filterwarnings('ignore')
+execution_path = os.getcwd()
+ADAFRUIT_IO_KEY = 'aa6afcbfbd164c5e8f9f7b57755099d9'
+ADAFRUIT_IO_USERNAME = 'Kraken_97'
+aio = Client(ADAFRUIT_IO_USERNAME,ADAFRUIT_IO_KEY)
+force_feed = aio.feeds('raspi')
+val = 1
+def OBJECT():
+detector = ObjectDetection()
+detector.setModelTypeAsRetinaNet()
+detector.setModelPath(r"C:\Users\Adarshini\Downloads\resnet50_coco_best_v2.1.0.h5")
+ detector.loadModel()
+ detections=detector.detectObjectsFromImage(input_image= r"C:\Users\Adarshini\Desktop\animal.jpg",output_image_path= r"C:\Users\Adarshini\Desktop\animal_new.jpg")
+    #plt.imshow("animal_new.jpg")
+    #plt.show()
+    for eachObject in detections:
+        print(eachObject["name"] , " : " , eachObject["percentage_probability"] )
+        if(eachObject["name"] == 'elephant'):
+            print("1")
+            aio.send(force_feed.key,str(val))
+            send_an_email()
+def send_an_email():  
+    toaddr = 'renusubi99@gmail.com'      # To id reciever mail id
+    me = 'renusubi99@gmail.com'          # your id sender mail id
+    subject = "elephant's image"              # Subject
+ 
+   msg = MIMEMultipart()  
+    msg['Subject'] = subject  
+    msg['From'] = me  
+    msg['To'] = toaddr  
+    msg.preamble = "test "  
+    msg.attach(MIMEText('elephant detected'))  
+     part = MIMEBase('application', "octet-stream")  
+    part.set_payload(open(r"C:\Users\Adarshini\Desktop\animal.jpg", "rb").read())  
+    encoders.encode_base64(part)  
+    part.add_header('Content-Disposition', 'attachment; filename="intruder.jpg"')   # File name and format name
+    msg.attach(part)  
+     try:  
+       s = smtplib.SMTP('smtp.gmail.com', 587)  # Protocol
+       s.ehlo()  
+       s.starttls()  
+       s.ehlo()  
+       s.login(user = 'adarshini.manoharan@gmail.com', password = 'dumstruckcandy')  # User id & password
+       #s.send_message(msg)  
+       s.sendmail(me, toaddr, msg.as_string())  
+       s.quit()  
+    #except:  
+    #   print ("Error: unable to send email")    
+    except:  
+          print ("Error")  
+cam = VideoCapture(0)   # 0 -> index of camera
+s, img = cam.read()
+if s:    # frame captured without any errors
+    namedWindow("cam-test")
+    imshow("cam-test",img)
+    waitKey(0)
+    destroyWindow("cam-test")
+    imwrite(r"C:\Users\Adarshini\Desktop\animal.jpg",img) #save image
+    OBJECT()
